@@ -13,7 +13,7 @@ function out = cellModel(j, T, pH2, pO2, par)
 %     PAR  Parameter structure, see urfc.defaultParameters
 %
 %   Output structure fields (all per cell):
-%     vCell, vRev, vAct, vOhm, vConc [V], rOhm [Ohm*cm^2],
+%     vCell, vRev, vAct, vOhm, vConc [V], rOhm [Ohm*cm^2], jCross [A/cm^2],
 %     nH2 [mol/(s*cm^2)] net hydrogen flux (positive = produced),
 %     qHeat [W/cm^2] waste heat flux, vTn [V] thermoneutral voltage,
 %     effHHV [-] mode-aware conversion efficiency on HHV basis.
@@ -46,15 +46,16 @@ vRev = 1.229 - 8.5e-4*(T - 298.15) + R*T/(2*F).*log(pH2.*sqrt(pO2));
 
 % Mode-dependent parameters
 arrhenius = exp(-par.Ea/R .* (1./T - 1/par.Tref));
-j0    = (isEC*par.j0EC + ~isEC*par.j0FC) .* arrhenius;
+j0    = (isEC*par.j0EC + ~isEC.*par.j0FC.*pO2.^par.gammaO2) .* arrhenius;   % FC: O2 reaction order
 alpha = isEC*par.alphaEC + ~isEC*par.alphaFC;
-jL    = isEC*par.jLEC + ~isEC*par.jLFC;
+jL    = isEC*par.jLEC + ~isEC.*par.jLFC.*pO2;   % FC limit scales with oxygen pressure
 
 % Activation overpotential (inverted symmetric Butler-Volmer)
 vAct = R*T./(2*alpha*F) .* asinh(j./(2*j0));
 
 % Ohmic overpotential (Springer membrane conductivity + contact resistance)
-sigma = (0.005139*par.lambda - 0.00326) .* exp(1268*(1/303.15 - 1./T)); % [S/cm]
+lambda = isEC*par.lambdaEC + ~isEC*par.lambdaFC;   % mode-dependent membrane hydration
+sigma = (0.005139*lambda - 0.00326) .* exp(1268*(1/303.15 - 1./T)); % [S/cm]
 rOhm = par.tMem./sigma + par.rContact;   % [Ohm*cm^2], tMem in cm
 vOhm = rOhm .* j;
 
@@ -66,7 +67,8 @@ vConc = sign(j) .* R.*T/(2*F) .* conc;
 vCell = vRev + vAct + vOhm + vConc;
 
 % Hydrogen flux (Faraday's law with crossover) and energy balance
-nH2 = (j - par.jCross)/(2*F);
+jCross = 2*F*par.psiH2.*pH2/par.tMem;   % permeation-driven crossover [A/cm^2]
+nH2 = (j - jCross)/(2*F);
 vTn = HHV/(2*F);
 qHeat = vCell.*j - nH2*HHV;
 
@@ -80,5 +82,5 @@ effHHV(fc) = pElec(fc)./pChem(fc);
 
 out = struct('vCell', vCell, 'vRev', vRev, 'vAct', vAct, 'vOhm', vOhm, ...
     'vConc', vConc, 'rOhm', rOhm, 'nH2', nH2, 'qHeat', qHeat, ...
-    'vTn', vTn, 'effHHV', effHHV);
+    'vTn', vTn, 'effHHV', effHHV, 'jCross', jCross);
 end

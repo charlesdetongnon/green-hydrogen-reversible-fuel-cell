@@ -46,17 +46,19 @@ parameters
     N_cell     = {50,    '1'       }; % Number of cells in stack
     A_cell     = {280,   'cm^2'    }; % Active cell area
     t_mem      = {125,   'um'      }; % Membrane thickness
-    lambda_mem = {14,    '1'       }; % Membrane water content (mol H2O / mol SO3-)
+    lambda_EC  = {14,    '1'       }; % Membrane water content, electrolyzer mode (mol H2O / mol SO3-)
+    lambda_FC  = {14,    '1'       }; % Membrane water content, fuel-cell mode (mol H2O / mol SO3-)
     R_contact  = {0,     'Ohm*cm^2'}; % Area-specific contact resistance
     j0_EC      = {1e-4,  'A/cm^2'  }; % Exchange current density, electrolyzer mode (at T_ref)
     alpha_EC   = {0.7,   '1'       }; % Charge transfer coefficient, electrolyzer mode
-    j0_FC      = {1e-4,  'A/cm^2'  }; % Exchange current density, fuel-cell mode (at T_ref)
+    j0_FC      = {1e-4,  'A/cm^2'  }; % Exchange current density, fuel-cell mode (at T_ref, 1 bar oxygen)
     alpha_FC   = {0.7,   '1'       }; % Charge transfer coefficient, fuel-cell mode
+    gamma_O2   = {0,     '1'       }; % Oxygen reaction order of fuel-cell exchange current
     E_a        = {0,     'kJ/mol'  }; % Activation energy of exchange current density
     T_ref      = {353.15, 'K'      }; % Reference temperature for exchange current density
     jL_EC      = {6,     'A/cm^2'  }; % Limiting current density, electrolyzer mode
-    jL_FC      = {1.4,   'A/cm^2'  }; % Limiting current density, fuel-cell mode
-    j_cross    = {2e-3,  'A/cm^2'  }; % Hydrogen crossover equivalent current density
+    jL_FC      = {6,     'A/cm^2'  }; % Limiting current density, fuel-cell mode, at 1 bar oxygen
+    psi_H2     = {8.2e-11, 'mol/(cm*s*bar)'}; % Hydrogen permeability of the membrane
 end
 
 parameters (Access = protected)
@@ -76,16 +78,18 @@ equations
     assert(N_cell > 0)
     assert(A_cell > 0)
     assert(t_mem > 0)
-    assert(lambda_mem > 1)
+    assert(lambda_EC > 1)
+    assert(lambda_FC > 1)
     assert(R_contact >= 0)
     assert(j0_EC > 0)
     assert(j0_FC > 0)
     assert(alpha_EC > 0)
     assert(alpha_FC > 0)
+    assert(gamma_O2 >= 0)
     assert(E_a >= 0)
     assert(jL_EC > 0)
     assert(jL_FC > 0)
-    assert(j_cross >= 0)
+    assert(psi_H2 >= 0)
 end
 
 variables
@@ -111,15 +115,21 @@ intermediates
 
     % --- Mode-dependent kinetic and transport parameters ---
     arrhenius = exp(-E_a/R_u * (1/T - 1/T_ref));
-    j0    = if ge(j, 0), j0_EC*arrhenius else j0_FC*arrhenius end;
+    % Fuel-cell exchange current follows the oxygen partial pressure with
+    % reaction order gamma_O2 (reference: 1 bar)
+    j0    = if ge(j, 0), j0_EC*arrhenius else j0_FC*arrhenius*(pO2_lim/p_std)^gamma_O2 end;
     alpha = if ge(j, 0), alpha_EC else alpha_FC end;
-    jL    = if ge(j, 0), jL_EC else jL_FC end;
+    % Fuel-cell limiting current is proportional to oxygen partial pressure
+    jL    = if ge(j, 0), jL_EC else jL_FC*pO2_lim/p_std end;
 
     % --- Activation overpotential: inverted symmetric Butler-Volmer ---
     % Reduces to the Tafel law b*log(|j|/j0) for |j| >> j0 and is zero at j = 0.
     v_act = R_u*T/(2*alpha*F) * asinh(j/(2*j0));
 
     % --- Ohmic overpotential: membrane (Springer conductivity) + contacts ---
+    % The membrane is liquid-equilibrated in electrolyzer mode and
+    % vapor-equilibrated in fuel-cell mode, hence a mode-dependent water content
+    lambda_mem = if ge(j, 0), lambda_EC else lambda_FC end;
     sigma_mem = {0.005139*lambda_mem - 0.00326, 'S/cm'} ...
         * exp(1268*(1/303.15 - 1/value(T, 'K')));
     R_ohm = t_mem/sigma_mem + R_contact;
@@ -134,6 +144,9 @@ intermediates
         end;
     v_conc = if ge(j, 0), R_u*T/(2*F)*conc else -R_u*T/(2*F)*conc end;
 
+    % --- Hydrogen crossover: permeation driven by hydrogen pressure ---
+    j_cross = 2*F*psi_H2*pH2_lim/t_mem;
+
     % --- Cell voltage ---
     v_cell = v_rev + v_act + v_ohm + v_conc;
 
@@ -146,7 +159,7 @@ end
 
 annotations
     [v, v_cell, v_rev, v_act, v_ohm, v_conc, v_tn] : LoggingUnit = 'V';
-    j                                             : LoggingUnit = 'A/cm^2';
+    [j, j_cross]                                  : LoggingUnit = 'A/cm^2';
     R_ohm                                         : LoggingUnit = 'Ohm*cm^2';
     [power_elec, power_chem, power_heat]          : LoggingUnit = 'kW';
     T                                             : LoggingUnit = 'K';
@@ -160,7 +173,8 @@ equations
     v == N_cell * v_cell;
 
     % Net hydrogen molar flow (Faraday's law, two electrons per H2 molecule).
-    % Crossover lowers production in electrolyzer mode and raises
+    % Crossover (membrane permeation, proportional to hydrogen pressure and
+    % inversely proportional to thickness) lowers production in electrolyzer mode and raises
     % consumption in fuel-cell mode.
     nH2 == N_cell * A_cell * (j - j_cross) / (2*F);
 

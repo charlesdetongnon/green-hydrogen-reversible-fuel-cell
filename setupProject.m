@@ -1,6 +1,6 @@
 function setupProject(rebuild)
 %SETUPPROJECT Add project folders to the path and build the Simscape library.
-%   setupProject() adds src, simscape, models and tests to the MATLAB path
+%   setupProject() adds the source, model, test, validation and data folders to the MATLAB path
 %   and builds the custom Simscape library greenH2_lib if it is missing.
 %   setupProject(true) forces a rebuild of the library.
 
@@ -9,7 +9,7 @@ arguments
 end
 
 root = fileparts(mfilename('fullpath'));
-folders = ["src", "simscape", "models", "tests"];
+folders = ["src", "simscape", "models", "tests", "validation", fullfile("data", "literature")];
 for f = folders
     p = fullfile(root, f);
     if isfolder(p)
