@@ -1,0 +1,86 @@
+component HydrogenTank
+% Hydrogen Storage Tank
+% Fixed-volume, isothermal compressed-hydrogen tank. The stored amount is
+% integrated from the net molar flow at input nH2 (positive = filling) and
+% the pressure follows the Abel-Noble real-gas equation of state
+%
+%   p * (V - n*b) = n * R * T
+%
+% where b is the co-volume of hydrogen. Outputs are the tank pressure and
+% the state of charge between the minimum and maximum working pressures.
+%
+% Isothermal operation is a reasonable approximation for slow (hours-long)
+% filling and emptying of a stationary tank; fast-fill heating is not
+% modeled.
+
+% Developed for MathWorks Challenge Project 204 (Green Hydrogen Production).
+% Drafted with the assistance of generative AI (Claude); verified against
+% h2.tankPressure in tests/tHydrogenStorage.m.
+
+inputs
+    nH2 = {0, 'mol/s'}; % nH2
+end
+
+outputs
+    p   = {30, 'bar'}; % p
+    soc = {0.5, '1'};  % SOC
+end
+
+annotations
+    nH2      : Side = left;
+    [p, soc] : Side = right;
+end
+
+parameters
+    V_tank = {1,      'm^3'    }; % Tank volume
+    T_tank = {298.15, 'K'      }; % Gas temperature
+    p_init = {30,     'bar'    }; % Initial pressure
+    p_min  = {2,      'bar'    }; % Minimum working pressure (SOC = 0)
+    p_max  = {350,    'bar'    }; % Maximum working pressure (SOC = 1)
+    b_H2   = {1.55e-5, 'm^3/mol'}; % Abel-Noble co-volume of hydrogen
+end
+
+parameters (Access = protected)
+    R_u    = {8.31446261815324, 'J/K/mol'}; % Universal gas constant
+    % Amount of gas at a given pressure, from the equation of state
+    n_init = p_init*V_tank/(R_u*T_tank + b_H2*p_init);
+    n_min  = p_min*V_tank/(R_u*T_tank + b_H2*p_min);
+    n_max  = p_max*V_tank/(R_u*T_tank + b_H2*p_max);
+end
+
+variables
+    n = {value = {1000, 'mol'}, priority = priority.none}; % Stored hydrogen
+end
+
+equations
+    assert(V_tank > 0)
+    assert(T_tank > 0)
+    assert(p_min > 0)
+    assert(p_max > p_min)
+    assert(p_init > 0)
+    assert(b_H2 >= 0)
+    assert(n > 0, 'Hydrogen tank is empty.')
+    assert(V_tank - n*b_H2 > 0, 'Hydrogen tank exceeds the validity of the equation of state.')
+end
+
+equations (Initial = true)
+    n == n_init;
+end
+
+intermediates
+    Z = V_tank/(V_tank - n*b_H2);                 % Compressibility factor
+    m_H2 = n * {2.01588e-3, 'kg/mol'};            % Stored mass
+end
+
+annotations
+    m_H2 : LoggingUnit = 'kg';
+    n    : LoggingUnit = 'mol';
+end
+
+equations
+    der(n) == nH2;
+    p == n*R_u*T_tank/(V_tank - n*b_H2);
+    soc == (n - n_min)/(n_max - n_min);
+end
+
+end

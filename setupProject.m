@@ -9,7 +9,7 @@ arguments
 end
 
 root = fileparts(mfilename('fullpath'));
-folders = ["src", "simscape", "models", "tests", "validation", fullfile("data", "literature")];
+folders = ["src", "simscape", "models", "tests", "validation", "analysis", fullfile("data", "literature")];
 for f = folders
     p = fullfile(root, f);
     if isfolder(p)
