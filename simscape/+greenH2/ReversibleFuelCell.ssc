@@ -1,0 +1,171 @@
+component ReversibleFuelCell
+% Reversible PEM Fuel Cell (URFC)
+% Lumped electro-thermal model of a unitized regenerative PEM fuel cell
+% stack. A single set of equations covers both operating modes:
+%
+% * Electrolyzer mode (current flows from + to -, i > 0): electrical power
+%   is absorbed and hydrogen is produced (nH2 > 0).
+% * Fuel-cell mode (i < 0): hydrogen is consumed (nH2 < 0) and electrical
+%   power is delivered.
+%
+% Cell voltage = reversible (Nernst) voltage + activation + ohmic +
+% concentration overpotentials. All overpotentials carry the sign of the
+% current, so the voltage is continuous through zero current.
+% Waste heat is exchanged with the thermal network through port H.
+%
+% Physical signal inputs pH2 and pO2 are the gas pressures at the hydrogen
+% and oxygen electrodes. Output nH2 is the net molar hydrogen flow.
+
+% Developed for MathWorks Challenge Project 204 (Green Hydrogen Production).
+% Drafted with the assistance of generative AI (Claude); equations reviewed
+% and verified against urfc.cellModel and the MathWorks PEM examples.
+
+nodes
+    p = foundation.electrical.electrical; % +
+    n = foundation.electrical.electrical; % -
+    H = foundation.thermal.thermal;       % H
+end
+
+inputs
+    pH2 = {1, 'bar'}; % pH2
+    pO2 = {1, 'bar'}; % pO2
+end
+
+outputs
+    nH2 = {0, 'mol/s'}; % nH2
+end
+
+annotations
+    [p, n]     : Side = top;
+    [pH2, pO2] : Side = left;
+    nH2        : Side = right;
+    H          : Side = bottom;
+end
+
+parameters
+    N_cell     = {50,    '1'       }; % Number of cells in stack
+    A_cell     = {280,   'cm^2'    }; % Active cell area
+    t_mem      = {125,   'um'      }; % Membrane thickness
+    lambda_mem = {14,    '1'       }; % Membrane water content (mol H2O / mol SO3-)
+    R_contact  = {0,     'Ohm*cm^2'}; % Area-specific contact resistance
+    j0_EC      = {1e-4,  'A/cm^2'  }; % Exchange current density, electrolyzer mode (at T_ref)
+    alpha_EC   = {0.7,   '1'       }; % Charge transfer coefficient, electrolyzer mode
+    j0_FC      = {1e-4,  'A/cm^2'  }; % Exchange current density, fuel-cell mode (at T_ref)
+    alpha_FC   = {0.7,   '1'       }; % Charge transfer coefficient, fuel-cell mode
+    E_a        = {0,     'kJ/mol'  }; % Activation energy of exchange current density
+    T_ref      = {353.15, 'K'      }; % Reference temperature for exchange current density
+    jL_EC      = {6,     'A/cm^2'  }; % Limiting current density, electrolyzer mode
+    jL_FC      = {1.4,   'A/cm^2'  }; % Limiting current density, fuel-cell mode
+    j_cross    = {2e-3,  'A/cm^2'  }; % Hydrogen crossover equivalent current density
+end
+
+parameters (Access = protected)
+    R_u    = {8.31446261815324, 'J/K/mol'}; % Universal gas constant
+    F      = {96485.33212,      'C/mol'  }; % Faraday constant
+    HHV_H2 = {285.8,            'kJ/mol' }; % Higher heating value of hydrogen
+    LHV_H2 = {241.8,            'kJ/mol' }; % Lower heating value of hydrogen
+    E0_std = {1.229,            'V'      }; % Reversible voltage at 25 degC, 1 bar, liquid water
+    dE0_dT = {-8.5e-4,          'V/K'    }; % Temperature coefficient of reversible voltage
+    T_std  = {298.15,           'K'      }; % Standard temperature
+    p_std  = {1,                'bar'    }; % Standard pressure
+    p_min  = {1e-3,             'bar'    }; % Lower bound on pressures inside logarithms
+    x_max  = 0.999;                         % Linearization threshold of concentration term
+end
+
+equations
+    assert(N_cell > 0)
+    assert(A_cell > 0)
+    assert(t_mem > 0)
+    assert(lambda_mem > 1)
+    assert(R_contact >= 0)
+    assert(j0_EC > 0)
+    assert(j0_FC > 0)
+    assert(alpha_EC > 0)
+    assert(alpha_FC > 0)
+    assert(E_a >= 0)
+    assert(jL_EC > 0)
+    assert(jL_FC > 0)
+    assert(j_cross >= 0)
+end
+
+variables
+    i = {0, 'A'}; % Stack current (positive = electrolyzer mode)
+    Q = {0, 'W'}; % Heat flow rate into the component from port H
+end
+
+branches
+    i : p.i -> n.i;
+    Q : H.Q -> *;
+end
+
+intermediates
+    v = p.v - n.v;   % Stack voltage
+    T = H.T;         % Stack temperature
+    j = i / A_cell;  % Signed current density (positive = electrolyzer mode)
+
+    % --- Reversible (Nernst) voltage, liquid water activity = 1 ---
+    pH2_lim = if ge(pH2, p_min), pH2 else p_min end;
+    pO2_lim = if ge(pO2, p_min), pO2 else p_min end;
+    v_rev = E0_std + dE0_dT*(T - T_std) ...
+        + R_u*T/(2*F) * log((pH2_lim/p_std) * (pO2_lim/p_std)^0.5);
+
+    % --- Mode-dependent kinetic and transport parameters ---
+    arrhenius = exp(-E_a/R_u * (1/T - 1/T_ref));
+    j0    = if ge(j, 0), j0_EC*arrhenius else j0_FC*arrhenius end;
+    alpha = if ge(j, 0), alpha_EC else alpha_FC end;
+    jL    = if ge(j, 0), jL_EC else jL_FC end;
+
+    % --- Activation overpotential: inverted symmetric Butler-Volmer ---
+    % Reduces to the Tafel law b*log(|j|/j0) for |j| >> j0 and is zero at j = 0.
+    v_act = R_u*T/(2*alpha*F) * asinh(j/(2*j0));
+
+    % --- Ohmic overpotential: membrane (Springer conductivity) + contacts ---
+    sigma_mem = {0.005139*lambda_mem - 0.00326, 'S/cm'} ...
+        * exp(1268*(1/303.15 - 1/value(T, 'K')));
+    R_ohm = t_mem/sigma_mem + R_contact;
+    v_ohm = R_ohm * j;
+
+    % --- Concentration overpotential, linearized near the limiting current ---
+    x = abs(j)/jL;
+    conc = if le(x, x_max), ...
+            -log(1 - x) ...
+        else ...
+            -log(1 - x_max) + (x - x_max)/(1 - x_max) ...
+        end;
+    v_conc = if ge(j, 0), R_u*T/(2*F)*conc else -R_u*T/(2*F)*conc end;
+
+    % --- Cell voltage ---
+    v_cell = v_rev + v_act + v_ohm + v_conc;
+
+    % --- Energy bookkeeping ---
+    power_elec = v * i;                       % Electrical power absorbed (negative = delivered)
+    power_chem = nH2 * HHV_H2;                % Chemical power stored as hydrogen (HHV basis)
+    power_heat = power_elec - power_chem;     % Waste heat released to port H
+    v_tn = HHV_H2/(2*F);                      % Thermoneutral voltage
+end
+
+annotations
+    [v, v_cell, v_rev, v_act, v_ohm, v_conc, v_tn] : LoggingUnit = 'V';
+    j                                             : LoggingUnit = 'A/cm^2';
+    R_ohm                                         : LoggingUnit = 'Ohm*cm^2';
+    [power_elec, power_chem, power_heat]          : LoggingUnit = 'kW';
+    T                                             : LoggingUnit = 'K';
+end
+
+equations
+    % The model is only valid for physical (positive absolute) temperatures
+    assert(T > 0, 'Stack temperature at port H must be positive.')
+
+    % Stack voltage
+    v == N_cell * v_cell;
+
+    % Net hydrogen molar flow (Faraday's law, two electrons per H2 molecule).
+    % Crossover lowers production in electrolyzer mode and raises
+    % consumption in fuel-cell mode.
+    nH2 == N_cell * A_cell * (j - j_cross) / (2*F);
+
+    % Waste heat is delivered to the thermal network
+    Q == -power_heat;
+end
+
+end
