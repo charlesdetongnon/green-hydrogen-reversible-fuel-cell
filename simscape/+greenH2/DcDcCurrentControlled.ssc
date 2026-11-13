@@ -1,0 +1,79 @@
+component DcDcCurrentControlled
+% DC-DC Converter (Current-Controlled, Average)
+% Average-value model of a bidirectional DC-DC converter that imposes the
+% current delivered to a device (battery, reversible fuel cell) and
+% exchanges the corresponding power with a DC bus:
+%
+%   device side:  i1 = iRef            (positive = current into device +)
+%   power:        P1 = v1*i1           (positive = device absorbs power)
+%   bus side:     P2 = P1/eta if P1 >= 0, P1*eta otherwise
+%                 i2 = P2/v2           (drawn from the bus)
+%
+% Switching ripple and converter dynamics are neglected (average model);
+% losses are represented by a constant efficiency in both directions.
+% Outputs v and i give the device-side voltage and current.
+
+% Developed for MathWorks Challenge Project 204 (Green Hydrogen Production).
+% Drafted with the assistance of generative AI (Claude); power balance
+% verified in tests/tMicrogrid.m.
+
+nodes
+    p1 = foundation.electrical.electrical; % 1+
+    n1 = foundation.electrical.electrical; % 1-
+    p2 = foundation.electrical.electrical; % 2+
+    n2 = foundation.electrical.electrical; % 2-
+end
+
+inputs
+    iRef = {0, 'A'}; % iRef
+end
+
+outputs
+    v = {0, 'V'}; % v
+    i = {0, 'A'}; % i
+end
+
+annotations
+    [p1, n1, iRef] : Side = left;
+    [p2, n2]       : Side = right;
+    [v, i]         : Side = bottom;
+end
+
+parameters
+    eta   = {0.97, '1'}; % Efficiency
+    v_min = {10,   'V'}; % Minimum bus voltage for power transfer
+end
+
+variables
+    i1 = {0, 'A'}; % Device-side current (into device +)
+    i2 = {0, 'A'}; % Bus-side current (drawn from bus +)
+end
+
+branches
+    i1 : n1.i -> p1.i;
+    i2 : p2.i -> n2.i;
+end
+
+intermediates
+    v1 = p1.v - n1.v;
+    v2 = p2.v - n2.v;
+    v2_lim = if ge(v2, v_min), v2 else v_min end;
+    power_device = v1*i1;                                         % absorbed by the device
+    power_bus = if ge(power_device, 0), power_device/eta else power_device*eta end;
+    power_loss = power_bus - power_device;
+end
+
+annotations
+    [power_device, power_bus, power_loss] : LoggingUnit = 'kW';
+end
+
+equations
+    assert(eta > 0 && eta <= 1)
+    assert(v_min > 0)
+    i1 == iRef;
+    i2 == power_bus/v2_lim;
+    v == v1;
+    i == i1;
+end
+
+end

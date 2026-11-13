@@ -1,0 +1,77 @@
+component DcDcVoltageControlled
+% DC-DC Converter (Voltage-Controlled, Average)
+% Average-value model of a unidirectional DC-DC converter that imposes the
+% terminal voltage of a source (photovoltaic array under MPPT control) and
+% transfers the harvested power to a DC bus:
+%
+%   source side:  v1 = vRef
+%   power:        P1 = v1*i1           (delivered by the source)
+%   bus side:     i2 = eta*P1/v2       (injected into the bus)
+%
+% Switching ripple and converter dynamics are neglected (average model).
+% Outputs v and i give the source-side voltage and current.
+
+% Developed for MathWorks Challenge Project 204 (Green Hydrogen Production).
+% Drafted with the assistance of generative AI (Claude); power balance
+% verified in tests/tMicrogrid.m.
+
+nodes
+    p1 = foundation.electrical.electrical; % 1+
+    n1 = foundation.electrical.electrical; % 1-
+    p2 = foundation.electrical.electrical; % 2+
+    n2 = foundation.electrical.electrical; % 2-
+end
+
+inputs
+    vRef = {0, 'V'}; % vRef
+end
+
+outputs
+    v = {0, 'V'}; % v
+    i = {0, 'A'}; % i
+end
+
+annotations
+    [p1, n1, vRef] : Side = left;
+    [p2, n2]       : Side = right;
+    [v, i]         : Side = bottom;
+end
+
+parameters
+    eta   = {0.98, '1'}; % Efficiency
+    v_min = {10,   'V'}; % Minimum bus voltage for power transfer
+end
+
+variables
+    i1 = {0, 'A'}; % Source-side current (out of source +)
+    i2 = {0, 'A'}; % Bus-side current (injected into bus +)
+end
+
+branches
+    i1 : p1.i -> n1.i;
+    i2 : n2.i -> p2.i;
+end
+
+intermediates
+    v1 = p1.v - n1.v;
+    v2 = p2.v - n2.v;
+    v2_lim = if ge(v2, v_min), v2 else v_min end;
+    power_source = v1*i1;               % delivered by the source
+    power_bus = eta*power_source;       % injected into the bus
+    power_loss = power_source - power_bus;
+end
+
+annotations
+    [power_source, power_bus, power_loss] : LoggingUnit = 'kW';
+end
+
+equations
+    assert(eta > 0 && eta <= 1)
+    assert(v_min > 0)
+    v1 == vRef;
+    i2 == power_bus/v2_lim;
+    v == v1;
+    i == i1;
+end
+
+end
