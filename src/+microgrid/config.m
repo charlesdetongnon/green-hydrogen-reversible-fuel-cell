@@ -42,6 +42,10 @@ cfg.urfc.pO2 = storage.pO2;              % [bar]
 cfg.urfc.converterEfficiency = 0.97;
 cfg.tank = storage.tank;
 
+% --- Inverter model fidelity ---
+cfg.inverterFidelity = "average";       % "average" or "switching"
+cfg.switchingFrequency = 1/ctrl.tsInverter;   % PWM carrier, synchronous with control [Hz]
+
 % --- Solver ---
 cfg.maxStep = 1e-4;                      % [s]
 cfg.control = ctrl;

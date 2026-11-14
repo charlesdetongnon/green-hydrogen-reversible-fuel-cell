@@ -90,6 +90,37 @@ classdef tMicrogrid < matlab.unittest.TestCase
             testCase.verifyEqual(dbg(6), 2*pi*p.fGrid, 'RelTol', 1e-4);  % omega
         end
 
+        function harmonicAnalysisRecoversKnownDistortion(testCase)
+            % 60 Hz fundamental of amplitude 10 with a 5th harmonic of 0.6
+            % and a 10 kHz component of 0.8: THD = sqrt(0.6^2 + 0.8^2)/10.
+            t = (0:2e-6:0.1).';
+            x = 10*cos(2*pi*60*t - 0.3) + 0.6*cos(2*pi*300*t) + 0.8*cos(2*pi*10e3*t) + 0.25;
+            h = microgrid.harmonicAnalysis(t, x, 60);
+            testCase.verifyEqual(h.fundamentalPeak, 10, 'RelTol', 1e-6);
+            testCase.verifyEqual(h.fundamentalRms, 10/sqrt(2), 'RelTol', 1e-6);
+            testCase.verifyEqual(h.thd, 0.1, 'RelTol', 1e-4);
+            testCase.verifyEqual(h.dc, 0.25, 'AbsTol', 1e-6);
+            testCase.verifyEqual(h.nPeriods, 6);
+        end
+
+        function switchingInverterBuildsAndRuns(testCase)
+            % Smoke test of the switching inverter model (short run, start-up
+            % transient only): the model simulates, the DC bus stays within
+            % bounds and the current carries switching ripple that the
+            % average model does not have.
+            cfg = testCase.Cfg;
+            cfg.inverterFidelity = "switching";
+            r = microgrid.simulateScenario(cfg, [0 800; 1 800], [0 20e3; 1 20e3], ...
+                0.05, 'SampleTime', 2e-6);
+            testCase.verifyGreaterThan(min(r.vdc), 850);
+            testCase.verifyLessThan(max(r.vdc), 1000);
+            k = r.t > 0.03;
+            ia = r.iabc(k, 1);
+            ripple = ia - movmean(ia, round(1e-4/2e-6));    % remove one-carrier-period average
+            testCase.verifyGreaterThan(max(abs(ripple)), 1);
+            testCase.verifyGreaterThan(r.solverSteps, 0.05*40*cfg.switchingFrequency);
+        end
+
         % ------------------------- plant model -------------------------
         function dcBusIsRegulated(testCase)
             r = testCase.Run;

@@ -1,9 +1,11 @@
-function res = simulateScenario(cfg, irradiance, loadPower, stopTime)
+function res = simulateScenario(cfg, irradiance, loadPower, stopTime, opts)
 %SIMULATESCENARIO Simulate the average-value three-phase microgrid.
 %   RES = microgrid.simulateScenario(CFG, IRRADIANCE, LOADPOWER, STOPTIME)
 %   builds the model 'MicrogridAverage' for the configuration CFG
 %   (microgrid.config), applies the scenario and returns the results on a
-%   uniform 1 ms time grid.
+%   uniform time grid (1 ms by default; use the name-value option
+%   SampleTime for a finer grid, e.g. 2e-6 s to resolve the ripple of the
+%   switching inverter model).
 %
 %   IRRADIANCE  [time value] matrix, W/m^2, linearly interpolated
 %   LOADPOWER   [time value] matrix, W, three-phase active load power
@@ -27,6 +29,7 @@ arguments
     irradiance (:,2) double
     loadPower (:,2) double
     stopTime (1,1) double {mustBePositive}
+    opts.SampleTime (1,1) double {mustBePositive} = 1e-3
 end
 
 mdl = buildMicrogridAverage(cfg, 'Name', "MicrogridAverageRun");
@@ -37,7 +40,9 @@ in = in.setVariable('mgLoadPower', loadPower);
 in = in.setModelParameter('StopTime', num2str(stopTime, 17));
 out = sim(in);
 
-t = (0:1e-3:stopTime).';
+res.wallTime = out.SimulationMetadata.TimingInfo.ExecutionElapsedWallTime;
+res.solverSteps = numel(out.tout);
+t = (0:opts.SampleTime:stopTime).';
 res.t = t;
 for name = ["pPv", "pUrfc", "pBattery", "pInverter", "pLoad", "vdc", "vPv", ...
         "vUrfc", "iUrfc", "socBattery", "socTank"]
@@ -48,7 +53,10 @@ res.iabc = resampleN(out.iabc, t, 3);
 res.pGrid = res.pLoad - res.pInverter;
 res.jUrfc = res.iUrfc/cfg.urfc.cell.aCell;
 
-% --- DC-side power balance from the Simscape log (on solver time grid) ---
+% --- DC-side power balance from the Simscape log (on solver time grid).
+%     The log is disabled for the switching model. ---
+res.metrics.busEnergyResidualJ = NaN;
+if cfg.inverterFidelity == "average"
 log = out.simlog;
 tb = log.PV_Converter.power_bus.series.time;
 pvBus = log.PV_Converter.power_bus.series.values('W');
@@ -60,6 +68,7 @@ eCap = 0.5*cfg.bus.capacitance*vdc.^2;
 invAc = interp1(t, res.pInverter, tb, 'linear', 'extrap');
 netIn = pvBus - urfcBus - batBus - invAc;        % power left for capacitors and inverter losses
 res.metrics.busEnergyResidualJ = trapz(tb, netIn) - (eCap(end) - eCap(1));
+end
 
 % --- Metrics after the start-up transient (first 0.3 s excluded) ---
 k = t >= 0.3;

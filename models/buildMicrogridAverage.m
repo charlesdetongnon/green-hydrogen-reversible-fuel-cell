@@ -23,6 +23,11 @@ function mdl = buildMicrogridAverage(cfg, opts)
 %   'mgLoadPower' [W] ([time value] matrices), see
 %   microgrid.simulateScenario.
 %
+%   CFG.inverterFidelity selects the inverter model: "average" (default,
+%   average-value converter driven by the modulation signals) or
+%   "switching" (two-level converter with ideal switches and sinusoidal
+%   PWM at CFG.switchingFrequency), which resolves the switching ripple.
+%
 %   Name-value options: Save (default false), Name (default 'MicrogridAverage').
 
 arguments
@@ -118,8 +123,17 @@ fromPs(mdl, 'Iurfc', 'A');
 fromPs(mdl, 'Tank SOC', '1');
 
 % ======================= Three-phase AC side =======================
-add_block('ee_lib/Semiconductors & Converters/Converters/Average-Value Voltage Source Converter (Three-Phase)', ...
-    blk('Inverter'));
+switching = cfg.inverterFidelity == "switching";
+if switching
+    % Two-level converter with ideal switches and antiparallel diodes
+    add_block('ee_lib/Semiconductors & Converters/Converters/Converter (Three-Phase)', blk('Inverter'));
+    set_param(blk('Inverter'), 'device_type', 'ee.enum.converters.switchingdevice.ideal', ...
+        'diode_param', 'ee.enum.converters.protectiondiode.nodynamics');
+    add_block('ee_lib/Semiconductors & Converters/Converters/Six-Pulse Gate Multiplexer', blk('Gate Mux'));
+else
+    add_block('ee_lib/Semiconductors & Converters/Converters/Average-Value Voltage Source Converter (Three-Phase)', ...
+        blk('Inverter'));
+end
 add_block('ee_lib/Sensors & Transducers/Current Sensor (Three-Phase)', blk('Iabc Sensor'));
 add_block('ee_lib/Passive/RLC Assemblies/RLC (Three-Phase)', blk('Filter'));
 set_param(blk('Filter'), 'component_structure', 'ee.enum.rlc.structure.SeriesRL', ...
@@ -135,7 +149,11 @@ add_block('ee_lib/Passive/Dynamic Load (Three-Phase)', blk('AC Load'));
 set_param(blk('AC Load'), 'FRated', num(cfg.grid.frequency), ...
     'Vline_rms_ini', num(cfg.grid.vLineRms), 'Vline_rms_min', num(0.5*cfg.grid.vLineRms));
 add_block('ee_lib/Connectors & References/Grounded Neutral (Three-Phase)', blk('Sensor Neutral'));
-toPs(mdl, 'ModWave PS', '1');
+if switching
+    addPwm(mdl, cfg.switchingFrequency);
+else
+    toPs(mdl, 'ModWave PS', '1');
+end
 fromPs(mdl, 'Vabc', 'V');
 fromPs(mdl, 'Iabc', 'A');
 
@@ -200,7 +218,11 @@ L('Vabc/1', 'Inverter Controller/1');
 L('Iabc/1', 'Inverter Controller/2');
 L('Vdc/1', 'Inverter Controller/3');
 L('Inverter Controller/1', 'ModWave Delay/1');
-L('ModWave Delay Size/1', 'ModWave PS/1');
+if switching
+    L('ModWave Delay Size/1', 'PWM Compare/1');
+else
+    L('ModWave Delay Size/1', 'ModWave PS/1');
+end
 % MPPT
 L('Vpv/1', 'MPPT/1');
 L('Ipv/1', 'MPPT/2');
@@ -287,7 +309,15 @@ c('pO2 PS', 'output', 'URFC', 'pO2');
 c('URFC', 'nH2', 'Hydrogen Tank', 'nH2');
 c('Hydrogen Tank', 'soc', 'Tank SOC', 'input');
 % AC side
-c('ModWave PS', 'output', 'Inverter', 'ModWave');
+if switching
+    c('Gate Mux', 'p', 'Inverter', 'G');
+    gates = ["GaH", "GbH", "GcH", "GaL", "GbL", "GcL"];
+    for g = gates
+        c(g + " PS", 'output', 'Gate Mux', g + "_ps");
+    end
+else
+    c('ModWave PS', 'output', 'Inverter', 'ModWave');
+end
 c('Inverter', 'N', 'Iabc Sensor', 'N1');
 c('Iabc Sensor', 'N2', 'Filter', 'N1');
 c('Filter', 'N2', 'Utility Grid', 'N');
@@ -301,8 +331,17 @@ c('P Load PS', 'output', 'AC Load', 'P');
 c('Q Load PS', 'output', 'AC Load', 'Q');
 
 % ======================= Solver and layout =======================
-set_param(mdl, 'Solver', 'ode23t', 'MaxStep', num(cfg.maxStep), 'RelTol', '1e-4', ...
-    'StopTime', '1', 'SimscapeLogType', 'all', 'SimscapeLogName', 'simlog', ...
+if switching
+    % Resolve each carrier period with at least 40 steps; the Simscape log is
+    % disabled because of the very large number of time steps.
+    maxStep = 1/(40*cfg.switchingFrequency);
+    logType = 'none';
+else
+    maxStep = cfg.maxStep;
+    logType = 'all';
+end
+set_param(mdl, 'Solver', 'ode23t', 'MaxStep', num(maxStep), 'RelTol', '1e-4', ...
+    'StopTime', '1', 'SimscapeLogType', logType, 'SimscapeLogName', 'simlog', ...
     'ReturnWorkspaceOutputs', 'on');
 Simulink.BlockDiagram.arrangeSystem(mdl);
 
@@ -315,6 +354,45 @@ end
 % ---------------------------------------------------------------------
 function s = num(x)
 s = num2str(x, 10);
+end
+
+function addPwm(mdl, fsw)
+% Sinusoidal pulse-width modulation: the three modulation signals are
+% compared with a triangular carrier (peak at the controller sampling
+% instants, so that currents are sampled at their ripple average). The
+% upper switch of a leg is on when m > carrier, the lower one otherwise.
+b = @(name) [mdl '/' char(name)];
+add_block('simulink/Sources/Repeating Sequence', b('Carrier'), ...
+    'rep_seq_t', sprintf('[0 0.5 1]/%.10g', fsw), 'rep_seq_y', '[1 -1 1]');
+add_block('simulink/Logic and Bit Operations/Relational Operator', b('PWM Compare'), ...
+    'Operator', '>', 'ZeroCross', 'on');
+add_block('simulink/Logic and Bit Operations/Logical Operator', b('PWM Not'), 'Operator', 'NOT');
+add_block('simulink/Signal Attributes/Data Type Conversion', b('Upper Gates'), 'OutDataTypeStr', 'double');
+add_block('simulink/Signal Attributes/Data Type Conversion', b('Lower Gates'), 'OutDataTypeStr', 'double');
+add_block('simulink/Math Operations/Gain', b('Upper Gate Voltage'), 'Gain', '10');
+add_block('simulink/Math Operations/Gain', b('Lower Gate Voltage'), 'Gain', '10');
+add_block('simulink/Signal Routing/Demux', b('Upper Demux'), 'Outputs', '3');
+add_block('simulink/Signal Routing/Demux', b('Lower Demux'), 'Outputs', '3');
+add_line(mdl, 'Carrier/1', 'PWM Compare/2');
+add_line(mdl, 'PWM Compare/1', 'Upper Gates/1');
+add_line(mdl, 'PWM Compare/1', 'PWM Not/1');
+add_line(mdl, 'PWM Not/1', 'Lower Gates/1');
+add_line(mdl, 'Upper Gates/1', 'Upper Gate Voltage/1');
+add_line(mdl, 'Lower Gates/1', 'Lower Gate Voltage/1');
+add_line(mdl, 'Upper Gate Voltage/1', 'Upper Demux/1');
+add_line(mdl, 'Lower Gate Voltage/1', 'Lower Demux/1');
+phases = 'abc';
+for k = 1:3
+    for side = ["H", "L"]
+        name = sprintf('G%s%s PS', phases(k), side);
+        add_block('nesl_utility/Simulink-PS Converter', b(name), 'Unit', 'V');
+        if side == "H"
+            add_line(mdl, sprintf('Upper Demux/%d', k), [name '/1']);
+        else
+            add_line(mdl, sprintf('Lower Demux/%d', k), [name '/1']);
+        end
+    end
+end
 end
 
 function fromWorkspace(mdl, name, variable)
