@@ -31,8 +31,10 @@ cfg.battery.powerMax = 50e3;          % [W]
 cfg.battery.socMin = 0.20;
 cfg.battery.socMax = 0.90;
 cfg.battery.socInit = 0.50;
-cfg.battery.chargeEfficiency = 0.95;      % assumed, converter included
-cfg.battery.dischargeEfficiency = 0.95;   % assumed, converter included
+% 85 % round-trip efficiency (NREL ATB 2024, commercial battery storage),
+% split equally between charge and discharge
+cfg.battery.chargeEfficiency = sqrt(0.85);
+cfg.battery.dischargeEfficiency = sqrt(0.85);
 
 % --- Reversible fuel cell (same stack as the detailed models) ---
 cfg.urfc.cell = storage.cell;
