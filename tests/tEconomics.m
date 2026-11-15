@@ -99,6 +99,23 @@ classdef tEconomics < matlab.unittest.TestCase
             testCase.verifyEqual(tx.capex.total, ca.capex.total);
         end
 
+        function hydrogenOfftakeHasAPositiveIncrementalCost(testCase)
+            % Withdrawing hydrogen for external use leaves less for power
+            % generation: grid import rises, so the incremental cost per
+            % kilogram delivered is positive.
+            cfg = longterm.config();
+            cost = econ.costData("target2030", "california");
+            reference = econ.evaluate(testCase.Result, cost);
+            cfg.h2.demandKgPerDay = 5;
+            r = longterm.simulate(cfg, testCase.Subset);
+            withOfftake = econ.evaluate(r, cost);
+            testCase.verifyGreaterThan(r.kpi.h2ExportedKg, 0);
+            lcoh = (withOfftake.totalAnnual - reference.totalAnnual) ...
+                /(r.kpi.h2ExportedKg*8760/r.kpi.hoursSimulated);
+            testCase.verifyGreaterThan(lcoh, 0);
+            testCase.verifyLessThanOrEqual(r.kpi.selfSufficiency, testCase.Result.kpi.selfSufficiency);
+        end
+
         function cyclicSimulationClosesTheTank(testCase)
             [r, info] = longterm.simulateCyclic(longterm.config(), testCase.Subset, 'MaxIterations', 8);
             testCase.verifyTrue(info.converged);
