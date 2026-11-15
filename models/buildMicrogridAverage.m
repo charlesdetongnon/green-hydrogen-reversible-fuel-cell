@@ -343,6 +343,9 @@ end
 set_param(mdl, 'Solver', 'ode23t', 'MaxStep', num(maxStep), 'RelTol', '1e-4', ...
     'StopTime', '1', 'SimscapeLogType', logType, 'SimscapeLogName', 'simlog', ...
     'ReturnWorkspaceOutputs', 'on');
+% Keep the whole Simscape log (the default stores only the last 10000 steps)
+% but store one step out of ten to limit memory use
+set_param(mdl, 'SimscapeLogLimitData', 'off', 'SimscapeLogDecimation', 10);
 Simulink.BlockDiagram.arrangeSystem(mdl);
 
 if opts.Save
