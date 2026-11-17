@@ -132,7 +132,7 @@ Toolboxes: Simulink, Simscape, Simscape Electrical, Optimization Toolbox; Image 
 |---|---|---|
 | `main` | setup, polarization, storage cycle, microgrid demonstration, annual simulation | about 5 min |
 | `main("full")` | adds inverter fidelity comparison, sizing, hydrogen goals, sensitivity | about 15 min more |
-| `runAllTests` | 56 tests | about 4 min |
+| `runAllTests` | 58 tests | about 7 min |
 
 Weather data are hourly NASA POWER data for 2023 at Daggett, California and Houston, Texas (satellite-derived irradiance, reanalysis meteorology). The load is a synthetic small-commercial profile with a mean of 20 kW. Irradiance on the tilted array is computed with a solar position algorithm and an isotropic sky model, and the array power with a cell-temperature correction.
 
@@ -270,7 +270,7 @@ Seventeen inputs were varied one at a time on the 95 % design in California. The
 | Average-value against switching inverter | fundamental current within 0.34 % |
 | Annual model against Simscape storage model over one day | stack energies within 0.001 %, hydrogen consumed within 0.6 % |
 | Irradiance closure of the weather data | 18 W/m² RMSE with the sun at mid-hour |
-| Automated tests | 56 tests |
+| Automated tests | 58 tests |
 
 These checks verify the implementation and compare the model with published data and with other models. They are not an experimental validation on hardware.
 

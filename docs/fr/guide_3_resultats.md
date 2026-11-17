@@ -186,7 +186,7 @@ Ce graphique « en tornade » répond à la question : **si je me suis trompé s
 
 | Niveau | Question | Ce qui a été fait |
 |---|---|---|
-| **Vérification** | Le code calcule-t-il bien les équations ? | 56 tests ; accord Simscape/MATLAB à 1 µV ; bilans fermés |
+| **Vérification** | Le code calcule-t-il bien les équations ? | 58 tests ; accord Simscape/MATLAB à 1 µV ; bilans fermés |
 | **Comparaison** | Le modèle est-il d'accord avec d'autres modèles ou des données publiées ? | NASA, DOE, article de Berkeley, exemples MathWorks, niveaux de fidélité entre eux |
 | **Validation expérimentale** | Le modèle prédit-il une vraie machine ? | **Non réalisée** : aucun banc d'essai |
 

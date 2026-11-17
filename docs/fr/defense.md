@@ -41,7 +41,7 @@ Conseil général : quand vous ne savez pas, dites-le, puis dites comment vous l
 | Coût incrémental de l'hydrogène, Californie, cibles 2030 | 2,7 à 6,6 $/kg |
 | Moyenné contre commuté | 0,34 % d'écart, 13 fois plus rapide |
 | Distorsion du courant, modèle commuté | 9,3 % |
-| Nombre de tests | 56 |
+| Nombre de tests | 58 |
 
 ---
 
@@ -236,7 +236,7 @@ De trois façons : en comparant le composant à son équivalent MATLAB (1 µV d'
 
 **Q27. Votre modèle est-il validé ?**
 
-Il est vérifié et comparé, pas validé expérimentalement. Vérifié : 56 tests, bilans fermés, accord entre implémentations. Comparé : à la thermodynamique de la NASA (0,6 mV), à l'état de l'art du DOE (52,1 contre 52 %), aux courbes publiées (5,3 mV), aux exemples MathWorks. Il manque une confrontation à une vraie cellule mesurée à plusieurs températures.
+Il est vérifié et comparé, pas validé expérimentalement. Vérifié : 58 tests, bilans fermés, accord entre implémentations. Comparé : à la thermodynamique de la NASA (0,6 mV), à l'état de l'art du DOE (52,1 contre 52 %), aux courbes publiées (5,3 mV), aux exemples MathWorks. Il manque une confrontation à une vraie cellule mesurée à plusieurs températures.
 
 **Q28. Pourquoi 42 mV d'écart avec les exemples MathWorks ?**
 
@@ -318,7 +318,7 @@ Répondez avec exactitude, comme dans le README : un agent (Claude, via Claude C
 
 **Q36. Comment savez-vous que le code de l'IA est juste ?**
 
-Rien n'a été accepté sans exécution. Chaque étape a été vérifiée par des tests (56), des bilans fermés, et des comparaisons indépendantes. Plusieurs erreurs ont été trouvées ainsi et corrigées : un capteur branché à l'envers, des paramètres mal lus dans l'exemple MathWorks, un journal de simulation tronqué.
+Rien n'a été accepté sans exécution. Chaque étape a été vérifiée par des tests (58), des bilans fermés, et des comparaisons indépendantes. Plusieurs erreurs ont été trouvées ainsi et corrigées : un capteur branché à l'envers, des paramètres mal lus dans l'exemple MathWorks, un journal de simulation tronqué, et un modèle regroupé en sous-systèmes qui donnait une puissance fausse.
 
 **Q37. L'IA a-t-elle inventé des données ?**
 

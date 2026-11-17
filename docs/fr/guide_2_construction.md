@@ -13,7 +13,7 @@ Parties : [1 — Fondements](guide_1_fondements.md) · **2 — Construction** ·
 ```
 main.m              lance tout le projet
 setupProject.m      prépare le chemin et compile la bibliothèque Simscape
-runAllTests.m       lance les 56 tests
+runAllTests.m       lance les 58 tests
 
 simscape/+greenH2/  les 4 composants écrits en Simscape Language
 src/+urfc/          la cellule réversible : modèle, paramètres, calibration
@@ -265,7 +265,21 @@ Chaque sortie de commande passe par un **retard d'un pas** (`Unit Delay`). Cela 
 
 **L'option commutée.** Si `cfg.inverterFidelity` vaut `"switching"`, le script remplace l'onduleur moyenné par un onduleur à six interrupteurs, et ajoute la modulation de largeur d'impulsion : chaque signal de modulation est comparé à un triangle à 10 kHz. Quand le signal dépasse le triangle, l'interrupteur du haut conduit ; sinon, celui du bas.
 
-### 5.12 Le modèle annuel : `longterm.simulate`
+### 5.12 Les modèles enregistrés : `buildPresentationModels`
+
+Les scripts de construction produisent des modèles « à plat » : 80 blocs côte à côte pour le micro-réseau. C'est pratique pour le code (les analyses retrouvent chaque bloc par son nom dans les résultats), mais illisible à l'écran.
+
+`models/buildPresentationModels.m` produit donc les deux modèles enregistrés dans `models/`, organisés en sous-systèmes nommés : photovoltaïque, batterie, pile réversible et réservoir, bus continu, onduleur avec réseau et charge. Les ports portent des noms parlants (`DC+`, `DC-`, `vdc`, `iUrfcRef`…), et un scénario par défaut est rangé dans l'espace de travail du modèle, pour qu'il tourne dès son ouverture.
+
+La méthode mérite d'être connue, car la plus simple a échoué :
+
+1. **Tentative avec `Simulink.BlockDiagram.createSubsystem`.** C'est la fonction prévue pour regrouper des blocs. Elle a d'abord fait planter MATLAB, puis produit un modèle faux : même blocs, mêmes réglages, mais la puissance de l'onduleur passait de 20,0 à 10,8 kW. Les connexions physiques avaient été mal reconstruites à la frontière des sous-systèmes.
+2. **Méthode retenue.** Le script lit toutes les connexions du modèle à plat (avec `PortConnectivity`, qui donne pour chaque port physique les ports auxquels il est relié), vide le schéma de ses lignes, déplace les blocs dans des sous-systèmes vides, puis recâble chaque connexion. Une connexion qui reste dans un sous-système est refaite à l'intérieur ; une connexion qui traverse une frontière passe par un port nommé.
+3. **Vérification.** Le test `tPresentationModels` simule chaque modèle enregistré et son équivalent à plat avec les mêmes entrées, et exige le même résultat à 10⁻⁶ près.
+
+La leçon : un modèle qui « a l'air juste » n'est pas forcément juste. Sans la comparaison par simulation, le modèle faux aurait été enregistré et montré dans la vidéo.
+
+### 5.13 Le modèle annuel : `longterm.simulate`
 
 Sur une année, on ne peut pas simuler chaque milliseconde. On raisonne heure par heure, en supposant que tout est à l'équilibre pendant l'heure.
 
@@ -283,14 +297,14 @@ Un point délicat : on connaît la puissance disponible, mais les tables sont ra
 
 `longterm.simulateCyclic` relance la simulation en repartant du niveau final du réservoir, jusqu'à ce que le niveau de fin d'année égale celui du début. Sans cela, un réservoir qui se vide sur l'année fausserait les résultats en « offrant » de l'hydrogène gratuit.
 
-### 5.13 Le solaire : `+solar`
+### 5.14 Le solaire : `+solar`
 
 - `readNasaPower` lit le fichier météo et vérifie qu'il ne manque aucune valeur.
 - `sunPosition` calcule où se trouve le soleil à chaque heure (hauteur et direction), à partir de la date, de l'heure et des coordonnées du site.
 - `planeOfArray` calcule l'éclairement reçu par un panneau incliné : la part directe (qui dépend de l'angle entre le soleil et le panneau), la part diffuse du ciel et la part réfléchie par le sol.
 - `pvPower` en déduit la puissance, en tenant compte du fait qu'un panneau chaud produit moins (−0,4 % par degré).
 
-### 5.14 L'économie : `+econ`
+### 5.15 L’économie : `+econ`
 
 - `costData` rassemble toutes les données de coût, **chacune avec sa source** écrite en commentaire, et la liste des hypothèses sans source.
 - `capitalRecoveryFactor` transforme un investissement en annuité. Pour 8 % sur 25 ans, le facteur vaut 0,0937 : un investissement de 100 000 $ équivaut à 9 370 $ par an.
@@ -298,9 +312,9 @@ Un point délicat : on connaît la puissance disponible, mais les tables sont ra
 
 Un détail important : la durée de vie de la pile n'est pas fixée. Elle est calculée à partir des heures de fonctionnement simulées. Une pile garantie 40 000 heures qui tourne 5 700 heures par an dure 7 ans.
 
-### 5.15 Les tests
+### 5.16 Les tests
 
-Les 56 tests sont rangés en cinq classes. Un test est une petite fonction qui vérifie une affirmation précise :
+Les 58 tests sont rangés en six classes. Un test est une petite fonction qui vérifie une affirmation précise :
 
 ```matlab
 function faradayLaw(testCase)
@@ -323,7 +337,7 @@ Les tests couvrent cinq familles : la physique (lois, limites, signes), l'accord
 ```matlab
 main            % démonstration rapide, environ 3 à 5 minutes
 main("full")    % ajoute les études longues
-runAllTests     % les 56 tests, environ 4 minutes
+runAllTests     % les 58 tests, environ 7 minutes
 ```
 
 Avant toute chose, MATLAB doit être ouvert dans le dossier du projet. Si vous utilisez l'agent, tapez d'abord `shareMATLABSession()` dans MATLAB ; c'est à refaire après chaque redémarrage.
@@ -357,6 +371,7 @@ Ces erreurs sont utiles à connaître : un examinateur peut demander ce qui a é
 | Nœuds électriques non reliés | Plusieurs blocs reliés par programme à la même masse | Une référence électrique par sous-ensemble |
 | Le bloc de commande ne compile pas | Ajout d'un champ à une structure déjà lue | Construire la structure d'un seul coup |
 | Résultats tronqués sur une longue simulation | Le journal Simscape ne garde que les 10 000 derniers pas par défaut | Lever cette limite ; un bilan qui « ferme » sur un extrait ne prouve rien sur l'ensemble |
+| Plantage de MATLAB, puis modèle regroupé en sous-systèmes faux (20,0 kW devenus 10,8 kW) | `createSubsystem` reconstruit mal certaines connexions physiques | Toujours comparer par simulation un modèle restructuré à l'original |
 | Calibration peu représentative | Mesures de 2014, deux points seulement | Chercher de meilleures données plutôt que forcer le modèle |
 
 Le sixième point a obligé à corriger un chiffre déjà annoncé : le résidu du bilan de puissance du micro-réseau valait 677 J sur les 5 secondes complètes, et non 47,6 J comme calculé d'abord sur la seule fin de la simulation.

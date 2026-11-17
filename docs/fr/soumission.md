@@ -53,7 +53,7 @@ C'est la deuxième séquence obligatoire. Montrez réellement l'outil.
 
 **À l'écran :** une session Claude Code avec le serveur MCP de MATLAB. Par exemple, demandez à l'agent d'exécuter un test ou de calculer la tension à 1 A/cm², et montrez la commande s'exécuter dans MATLAB. Montrez aussi un passage de l'historique Git.
 
-> "I developed this project with an AI agent, Claude, connected to MATLAB through the MATLAB MCP server. The agent wrote and ran the code in my MATLAB session. Every result was executed and tested: there are 56 automated tests. The AI did not generate any data: measurements, weather and costs come from cited sources. The README explains exactly how AI was used."
+> "I developed this project with an AI agent, Claude, connected to MATLAB through the MATLAB MCP server. The agent wrote and ran the code in my MATLAB session. Every result was executed and tested: there are 58 automated tests. The AI did not generate any data: measurements, weather and costs come from cited sources. The README explains exactly how AI was used."
 
 Soyez prêt à ce que cette séquence soit regardée de près : elle doit montrer un usage réel et maîtrisé.
 
@@ -72,15 +72,17 @@ Soyez prêt à ce que cette séquence soit regardée de près : elle doit montre
 
 ---
 
-## 3. Avant la vidéo : mettre en forme les schémas Simulink
+## 3. Les schémas Simulink pour la vidéo
 
-Les modèles sont générés par script et leur disposition est automatique : les blocs se chevauchent par endroits et les noms sont parfois tronqués. Pour la vidéo, il vaut la peine de :
+Les deux modèles enregistrés dans `models/` sont organisés en sous-systèmes nommés, avec des ports nommés et une légende. Ils contiennent un scénario par défaut et tournent dès leur ouverture, après `setupProject`. Ce sont eux qu'il faut montrer.
 
-- regrouper les blocs en sous-systèmes nommés (Photovoltaïque, Batterie, Pile réversible, Onduleur, Commande) ;
-- renommer les blocs génériques et aligner les liaisons ;
-- ajouter des annotations.
+Pour la séquence Simulink :
 
-C'est une tâche que je peux faire si vous le souhaitez.
+- ouvrez `MicrogridAverage.slx` et montrez d'abord le niveau supérieur, qui se lit comme un schéma de principe ;
+- double-cliquez sur « Reversible Fuel Cell and Hydrogen Tank » pour montrer la pile réversible et son convertisseur ;
+- lancez la simulation avec le bouton Run : les 5 secondes du scénario demandent une à trois minutes de calcul selon la machine ; préparez-la avant l’enregistrement et coupez l’attente au montage.
+
+Ces modèles sont reconstruits par `models/buildPresentationModels.m`. Si vous modifiez un modèle à la main dans Simulink, ce script écrasera vos changements à sa prochaine exécution.
 
 ---
 

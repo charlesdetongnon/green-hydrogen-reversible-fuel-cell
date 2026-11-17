@@ -1,9 +1,10 @@
 function results = runAllTests()
 %RUNALLTESTS Run the automated test suite of the project.
-%   RESULTS = runAllTests() sets up the project and runs the five test
-%   classes in the tests folder (about four minutes; the microgrid tests
+%   RESULTS = runAllTests() sets up the project and runs the six test
+%   classes in the tests folder (about seven minutes; the microgrid tests
 %   simulate the Simscape Electrical model, including a short run of the
-%   switching inverter). A summary table is displayed.
+%   switching inverter, and the saved models are compared with the flat
+%   ones). A summary table is displayed.
 
 root = fileparts(mfilename('fullpath'));
 run(fullfile(root, 'setupProject.m'));
