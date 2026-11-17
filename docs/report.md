@@ -22,7 +22,9 @@ This report answers the five points. The technology studied is the unitized rege
 
 A PEM cell combines hydrogen and oxygen into water and delivers electricity (fuel-cell mode), or uses electricity to split water (electrolyzer mode):
 
-$$\mathrm{H_2 + \tfrac{1}{2}O_2 \rightleftharpoons H_2O}$$
+```math
+\mathrm{H_2 + \tfrac{1}{2}O_2 \rightleftharpoons H_2O}
+```
 
 Two voltages characterize the reaction with liquid water at 25 °C. The reversible voltage, $E^0 = -\Delta G/(2F) = 1.229$ V, is the cell voltage at equilibrium. The thermoneutral voltage, $V_{tn} = -\Delta H/(2F) = 1.481$ V, corresponds to the higher heating value of hydrogen (285.8 kJ/mol). An electrolyzer operating above $V_{tn}$ releases heat; a fuel cell always does.
 
@@ -40,49 +42,65 @@ Existing material was reviewed before modeling:
 
 Sign convention: the current density $j$ is positive in electrolyzer mode and negative in fuel-cell mode. The cell voltage is
 
-$$V = V_{rev} + \eta_{act} + \eta_{ohm} + \eta_{conc}$$
+```math
+V = V_{rev} + \eta_{act} + \eta_{ohm} + \eta_{conc}
+```
 
 where every overpotential has the sign of $j$.
 
 **Reversible voltage (Nernst, liquid water):**
 
-$$V_{rev} = 1.229 - 8.5\times10^{-4}\,(T - 298.15) + \frac{RT}{2F}\ln\!\left(p_{H_2}\,p_{O_2}^{1/2}\right)$$
+```math
+V_{rev} = 1.229 - 8.5\times10^{-4}\,(T - 298.15) + \frac{RT}{2F}\ln\!\left(p_{H_2}\,p_{O_2}^{1/2}\right)
+```
 
 with pressures in bar.
 
 **Activation overpotential.** The symmetric Butler-Volmer equation is inverted in closed form:
 
-$$\eta_{act} = \frac{RT}{2\alpha F}\,\operatorname{asinh}\!\left(\frac{j}{2 j_0}\right)$$
+```math
+\eta_{act} = \frac{RT}{2\alpha F}\,\mathrm{asinh}\!\left(\frac{j}{2 j_0}\right)
+```
 
 This expression is zero at $j = 0$, odd in $j$, and tends to the Tafel law $\frac{RT}{2\alpha F}\ln(|j|/j_0)$ for $|j| \gg j_0$. It removes the discontinuity that prevents the two MathWorks components from being merged. The exchange current density and transfer coefficient take different values in the two modes, because the oxygen electrode does not behave symmetrically. In fuel-cell mode the exchange current density depends on the oxygen partial pressure:
 
-$$j_0 = j_{0,FC}\,p_{O_2}^{\gamma}\,\exp\!\left[-\frac{E_a}{R}\left(\frac{1}{T}-\frac{1}{T_{ref}}\right)\right]$$
+```math
+j_0 = j_{0,FC}\,p_{O_2}^{\gamma}\,\exp\!\left[-\frac{E_a}{R}\left(\frac{1}{T}-\frac{1}{T_{ref}}\right)\right]
+```
 
 **Ohmic overpotential.** The membrane conductivity follows the Springer correlation, with a water content $\lambda$ that depends on the mode (liquid-equilibrated in electrolyzer mode, vapor-equilibrated in fuel-cell mode):
 
-$$\sigma = (0.005139\,\lambda - 0.00326)\,\exp\!\left[1268\left(\frac{1}{303}-\frac{1}{T}\right)\right],\qquad \eta_{ohm} = \left(\frac{t_m}{\sigma} + R_c\right) j$$
+```math
+\sigma = (0.005139\,\lambda - 0.00326)\,\exp\!\left[1268\left(\frac{1}{303}-\frac{1}{T}\right)\right],\qquad \eta_{ohm} = \left(\frac{t_m}{\sigma} + R_c\right) j
+```
 
 Because $\eta_{ohm}$ is proportional to $j$, switching $\lambda$ at $j = 0$ does not create a voltage jump.
 
 **Concentration overpotential:**
 
-$$\eta_{conc} = -\operatorname{sign}(j)\,\frac{RT}{2F}\ln\!\left(1 - \frac{|j|}{j_L}\right)$$
+```math
+\eta_{conc} = -\mathrm{sign}(j)\,\frac{RT}{2F}\ln\!\left(1 - \frac{|j|}{j_L}\right)
+```
 
 linearized beyond 99.9 % of the limiting current for numerical robustness. In fuel-cell mode $j_L$ is proportional to the oxygen partial pressure.
 
 **Hydrogen flow and crossover.** Faraday's law gives the hydrogen produced or consumed; permeation through the membrane, proportional to the hydrogen pressure and inversely proportional to the membrane thickness, is subtracted:
 
-$$\dot n_{H_2} = \frac{N A\,(j - j_x)}{2F},\qquad j_x = \frac{2F\,\psi\,p_{H_2}}{t_m}$$
+```math
+\dot n_{H_2} = \frac{N A\,(j - j_x)}{2F},\qquad j_x = \frac{2F\,\psi\,p_{H_2}}{t_m}
+```
 
 Crossover lowers production in electrolyzer mode and raises consumption in fuel-cell mode.
 
-**Heat.** The waste heat is the electrical power minus the chemical power stored on a higher-heating-value basis, $\dot Q = VI - \dot n_{H_2}\,\Delta H$. It is sent to a thermal port, so the energy balance closes by construction.
+**Heat.** The waste heat is the electrical power minus the chemical power stored on a higher-heating-value basis, $\dot Q = VI - \dot n_{H_2}\ \Delta H$. It is sent to a thermal port, so the energy balance closes by construction.
 
 ### 3.2 Storage subsystem
 
-The stack is connected to a lumped thermal mass $C\,\dot T = \dot Q + \dot Q_{tm} - (T - T_{amb})/R_{th}$, where $\dot Q_{tm}$ is the heating or cooling power set by a PI controller with output limits and anti-windup. The tank is a fixed-volume isothermal vessel with the Abel-Noble equation of state
+The stack is connected to a lumped thermal mass $C\ \dot T = \dot Q + \dot Q_{tm} - (T - T_{amb})/R_{th}$, where $\dot Q_{tm}$ is the heating or cooling power set by a PI controller with output limits and anti-windup. The tank is a fixed-volume isothermal vessel with the Abel-Noble equation of state
 
-$$p\,(V - n b) = nRT$$
+```math
+p\,(V - n b) = nRT
+```
 
 Two architectures are available: a stack at ambient pressure with a mechanical compressor (intercooled multi-stage, default), or a stack at tank pressure.
 

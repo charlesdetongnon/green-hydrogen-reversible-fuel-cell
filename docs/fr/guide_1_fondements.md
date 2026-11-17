@@ -87,7 +87,9 @@ Cette section est la plus importante pour la défense. Chaque équation du compo
 
 Une cellule PEM est faite de deux électrodes séparées par une membrane qui laisse passer les protons mais pas les électrons. La réaction globale est
 
-$$\mathrm{H_2 + \tfrac{1}{2}O_2 \rightleftharpoons H_2O}$$
+```math
+\mathrm{H_2 + \tfrac{1}{2}O_2 \rightleftharpoons H_2O}
+```
 
 - De gauche à droite, c'est une **pile à combustible** : l'hydrogène et l'oxygène forment de l'eau et la cellule fournit du courant.
 - De droite à gauche, c'est un **électrolyseur** : on fournit du courant et l'eau se décompose.
@@ -98,13 +100,17 @@ Chaque molécule d'hydrogène met en jeu **deux électrons**. Ce chiffre 2 revie
 
 **La tension réversible, 1,229 V.** C'est la tension de la cellule à l'équilibre, sans courant, à 25 °C et 1 bar, avec de l'eau liquide. Elle vient de l'énergie libre de Gibbs de la réaction, $\Delta G = -237{,}1$ kJ/mol :
 
-$$E^0 = \frac{-\Delta G}{2F} = \frac{237\,100}{2 \times 96\,485} = 1{,}229\ \text{V}$$
+```math
+E^0 = \frac{-\Delta G}{2F} = \frac{237\,100}{2 \times 96\,485} = 1{,}229\ \text{V}
+```
 
-où $F = 96\,485$ C/mol est la constante de Faraday (la charge d'une mole d'électrons).
+où $F = 96\ 485$ C/mol est la constante de Faraday (la charge d'une mole d'électrons).
 
 **La tension thermoneutre, 1,481 V.** Elle vient de l'enthalpie de la réaction, $\Delta H = -285{,}8$ kJ/mol, qui est aussi le pouvoir calorifique supérieur (PCS) de l'hydrogène :
 
-$$V_{tn} = \frac{-\Delta H}{2F} = \frac{285\,800}{2 \times 96\,485} = 1{,}481\ \text{V}$$
+```math
+V_{tn} = \frac{-\Delta H}{2F} = \frac{285\,800}{2 \times 96\,485} = 1{,}481\ \text{V}
+```
 
 Pourquoi deux tensions ? Parce que toute l'énergie chimique ($\Delta H$) ne peut pas devenir de l'électricité : une partie ($T\Delta S$) est forcément de la chaleur. La tension thermoneutre sert de repère pour la chaleur :
 
@@ -115,13 +121,17 @@ Pourquoi deux tensions ? Parce que toute l'énergie chimique ($\Delta H$) ne peu
 
 Convention de signe du projet : la densité de courant $j$ (en A/cm²) est **positive en électrolyse** et **négative en mode pile**.
 
-$$V = V_{rev} + \eta_{act} + \eta_{ohm} + \eta_{conc}$$
+```math
+V = V_{rev} + \eta_{act} + \eta_{ohm} + \eta_{conc}
+```
 
 Les trois derniers termes sont des pertes, appelées surtensions. **Chacune a le signe du courant.** En électrolyse ($j > 0$) elles s'ajoutent : il faut plus de 1,23 V pour produire de l'hydrogène. En mode pile ($j < 0$) elles se retranchent : la cellule fournit moins de 1,23 V. C'est cette idée simple qui permet d'écrire un seul jeu d'équations pour les deux modes.
 
 ### 3.4 Terme 1 : la tension réversible (équation de Nernst)
 
-$$V_{rev} = 1{,}229 - 8{,}5\times10^{-4}\,(T - 298{,}15) + \frac{RT}{2F}\ln\!\left(p_{H_2}\sqrt{p_{O_2}}\right)$$
+```math
+V_{rev} = 1{,}229 - 8{,}5\times10^{-4}\,(T - 298{,}15) + \frac{RT}{2F}\ln\!\left(p_{H_2}\sqrt{p_{O_2}}\right)
+```
 
 - Le deuxième terme dit que la tension réversible **baisse quand la température monte** (0,85 mV par kelvin).
 - Le troisième terme dit qu'elle **monte avec la pression** des gaz. Il faut plus de tension pour produire de l'hydrogène sous pression, et on en récupère plus en le consommant sous pression.
@@ -129,7 +139,7 @@ $$V_{rev} = 1{,}229 - 8{,}5\times10^{-4}\,(T - 298{,}15) + \frac{RT}{2F}\ln\!\le
 **Exemple chiffré**, aux conditions de calibration : 80 °C (353,15 K), pressions partielles d'hydrogène et d'oxygène de 0,539 bar (pression ambiante, moins la vapeur d'eau).
 
 - Effet de température : $1{,}229 - 0{,}00085 \times 55 = 1{,}1823$ V
-- Facteur $RT/2F = 8{,}314 \times 353{,}15 / (2 \times 96\,485) = 0{,}01522$ V
+- Facteur $RT/2F = 8{,}314 \times 353{,}15 / (2 \times 96\ 485) = 0{,}01522$ V
 - Effet de pression : $0{,}01522 \times \ln(0{,}539^{1{,}5}) = 0{,}01522 \times (-0{,}927) = -0{,}0141$ V
 - **Total : 1,1681 V**
 
@@ -139,39 +149,45 @@ $$V_{rev} = 1{,}229 - 8{,}5\times10^{-4}\,(T - 298{,}15) + \frac{RT}{2F}\ln\!\le
 
 Pour qu'une réaction électrochimique avance, il faut franchir une barrière d'énergie. Cela coûte de la tension, surtout à l'électrode à oxygène, qui est lente. La loi qui relie courant et surtension est celle de Butler-Volmer. Dans sa forme symétrique, elle s'inverse exactement :
 
-$$\eta_{act} = \frac{RT}{2\alpha F}\,\operatorname{asinh}\!\left(\frac{j}{2 j_0}\right)$$
+```math
+\eta_{act} = \frac{RT}{2\alpha F}\,\mathrm{asinh}\!\left(\frac{j}{2 j_0}\right)
+```
 
 - $j_0$ est la **densité de courant d'échange** : plus elle est grande, plus la réaction est facile.
 - $\alpha$ est le **coefficient de transfert**, fixé à 0,5.
-- $\operatorname{asinh}$ est le sinus hyperbolique inverse.
+- $\mathrm{asinh}$ est le sinus hyperbolique inverse.
 
 **Pourquoi cette forme est la clé du projet.** Le sinus hyperbolique inverse a trois propriétés :
 
 1. Il vaut **zéro en zéro** : pas de surtension sans courant.
-2. Il est **impair** : $\operatorname{asinh}(-x) = -\operatorname{asinh}(x)$. La surtension change de signe avec le courant, automatiquement.
-3. Pour $x$ grand, $\operatorname{asinh}(x) \approx \ln(2x)$. On retrouve donc la **loi de Tafel** $\eta = \frac{RT}{2\alpha F}\ln(j/j_0)$ utilisée par MathWorks.
+2. Il est **impair** : $\mathrm{asinh}(-x) = -\mathrm{asinh}(x)$. La surtension change de signe avec le courant, automatiquement.
+3. Pour $x$ grand, $\mathrm{asinh}(x) \approx \ln(2x)$. On retrouve donc la **loi de Tafel** $\eta = \frac{RT}{2\alpha F}\ln(j/j_0)$ utilisée par MathWorks.
 
 Les exemples MathWorks utilisent directement la loi de Tafel, qui n'est pas définie à courant nul (le logarithme de zéro n'existe pas). C'est pourquoi ils doivent couper le courant à zéro. Avec le sinus hyperbolique inverse, la courbe passe par zéro sans rupture.
 
 Les valeurs de $j_0$ sont différentes dans les deux modes, car l'électrode à oxygène ne se comporte pas de la même façon quand elle produit de l'oxygène et quand elle en consomme. Comme le terme vaut zéro à $j = 0$, changer de paramètres à cet endroit ne crée aucun saut.
 
-En mode pile, $j_0$ dépend aussi de la pression d'oxygène : $j_0 = j_{0,FC}\,p_{O_2}^{\gamma}$ avec $\gamma = 0{,}75$. C'est ce qui distingue le fonctionnement à l'oxygène pur du fonctionnement à l'air.
+En mode pile, $j_0$ dépend aussi de la pression d'oxygène : $j_0 = j_{0,FC}\ p_{O_2}^{\gamma}$ avec $\gamma = 0{,}75$. C'est ce qui distingue le fonctionnement à l'oxygène pur du fonctionnement à l'air.
 
 **Exemple chiffré**, en électrolyse à 1 A/cm², avec $j_0 = 1{,}009\times10^{-4}$ A/cm² :
 
 - $RT/(2\alpha F) = 0{,}01522/0{,}5 = 0{,}03043$ V
-- $\operatorname{asinh}(1/(2 \times 1{,}009\times10^{-4})) = \operatorname{asinh}(4955) = 9{,}201$
+- $\mathrm{asinh}(1/(2 \times 1{,}009\times10^{-4})) = \mathrm{asinh}(4955) = 9{,}201$
 - **$\eta_{act} = 0{,}2800$ V**
 
 ### 3.6 Terme 3 : la surtension ohmique
 
 C'est la loi d'Ohm : $\eta_{ohm} = R \times j$. La résistance a deux parts : la membrane et les contacts.
 
-$$R = \frac{t_m}{\sigma} + R_c$$
+```math
+R = \frac{t_m}{\sigma} + R_c
+```
 
 $t_m$ est l'épaisseur de la membrane (50,8 µm pour le Nafion 212) et $\sigma$ sa conductivité, donnée par la corrélation de Springer :
 
-$$\sigma = (0{,}005139\,\lambda - 0{,}00326)\,\exp\!\left[1268\left(\frac{1}{303}-\frac{1}{T}\right)\right]$$
+```math
+\sigma = (0{,}005139\,\lambda - 0{,}00326)\,\exp\!\left[1268\left(\frac{1}{303}-\frac{1}{T}\right)\right]
+```
 
 $\lambda$ est la **teneur en eau** de la membrane : une membrane humide conduit bien, une membrane sèche conduit mal. Dans notre modèle, $\lambda$ dépend du mode : 22 en électrolyse (la membrane baigne dans l'eau liquide), 10,1 en mode pile (elle n'est en contact qu'avec de la vapeur). C'est la calibration qui a révélé ce besoin : sans cela, les pentes des deux courbes ne pouvaient pas être reproduites ensemble.
 
@@ -186,7 +202,9 @@ $\lambda$ est la **teneur en eau** de la membrane : une membrane humide conduit 
 
 À fort courant, les réactifs n'arrivent plus assez vite aux électrodes. Il existe un courant limite $j_L$ :
 
-$$\eta_{conc} = -\operatorname{sign}(j)\,\frac{RT}{2F}\ln\!\left(1 - \frac{|j|}{j_L}\right)$$
+```math
+\eta_{conc} = -\mathrm{sign}(j)\,\frac{RT}{2F}\ln\!\left(1 - \frac{|j|}{j_L}\right)
+```
 
 Quand $|j|$ approche $j_L$, le logarithme plonge et la tension s'effondre. Pour éviter un calcul impossible, le modèle remplace la courbe par une droite au-delà de 99,9 % du courant limite. En mode pile, $j_L$ est proportionnel à la pression d'oxygène : à l'air, il y a cinq fois moins d'oxygène, donc un courant limite cinq fois plus bas.
 
@@ -215,15 +233,19 @@ Remarquez que la pile perd plus en activation (0,35 V contre 0,28 V) et en rési
 
 Le débit d'hydrogène est proportionnel au courant. Pour $N$ cellules de surface $A$ :
 
-$$\dot n_{H_2} = \frac{N\,A\,(j - j_x)}{2F}$$
+```math
+\dot n_{H_2} = \frac{N\,A\,(j - j_x)}{2F}
+```
 
 Le **2** au dénominateur vient des deux électrons par molécule. C'est lui qui manque dans la soumission de 2022.
 
-**Exemple :** 100 cellules de 300 cm² à 1 A/cm² produisent $100 \times 300 / (2 \times 96\,485) = 0{,}155$ mol/s, soit 1,13 kg d'hydrogène par heure.
+**Exemple :** 100 cellules de 300 cm² à 1 A/cm² produisent $100 \times 300 / (2 \times 96\ 485) = 0{,}155$ mol/s, soit 1,13 kg d'hydrogène par heure.
 
 $j_x$ est la **fuite** : un peu d'hydrogène traverse la membrane sans produire de courant. Elle est proportionnelle à la pression d'hydrogène et inversement proportionnelle à l'épaisseur de la membrane :
 
-$$j_x = \frac{2F\,\psi\,p_{H_2}}{t_m}$$
+```math
+j_x = \frac{2F\,\psi\,p_{H_2}}{t_m}
+```
 
 À pression ambiante, elle vaut 0,0017 A/cm², soit 0,17 % du courant à 1 A/cm². À 350 bar, elle serait 650 fois plus grande. C'est pourquoi le modèle déconseille de mettre la pile à la pression du réservoir.
 
@@ -233,7 +255,9 @@ Une seule formule sert aux deux modes : en électrolyse la fuite diminue la prod
 
 La chaleur dégagée est la différence entre la puissance électrique et la puissance chimique stockée :
 
-$$\dot Q = V I - \dot n_{H_2}\,\Delta H$$
+```math
+\dot Q = V I - \dot n_{H_2}\,\Delta H
+```
 
 Cette formule unique donne le bon signe dans les deux modes, et garantit que le bilan d'énergie se ferme exactement.
 
@@ -255,7 +279,9 @@ Un raccourci utile : le rendement aller-retour est à peu près le rapport des t
 
 À haute pression, l'hydrogène ne suit plus la loi des gaz parfaits, car les molécules occupent elles-mêmes du volume. L'équation d'Abel-Noble corrige cela :
 
-$$p\,(V - n b) = nRT$$
+```math
+p\,(V - n b) = nRT
+```
 
 $b = 1{,}55\times10^{-5}$ m³/mol est le « co-volume ». **Exemple :** un réservoir de 5 m³ à 350 bar et 25 °C contient 57 900 mol, soit 117 kg. La loi des gaz parfaits en annoncerait 70 600 mol, 22 % de trop.
 
@@ -267,7 +293,9 @@ Comprimer l'hydrogène de la pression ambiante à 350 bar coûte de l'énergie. 
 
 La température de la pile obéit à un bilan simple :
 
-$$C\,\frac{dT}{dt} = \dot Q + \dot Q_{rég} - \frac{T - T_{amb}}{R_{th}}$$
+```math
+C\,\frac{dT}{dt} = \dot Q + \dot Q_{rég} - \frac{T - T_{amb}}{R_{th}}
+```
 
 $C$ est la capacité thermique de la pile, $\dot Q$ sa propre chaleur, $\dot Q_{rég}$ le chauffage ou le refroidissement commandé, et le dernier terme la perte vers l'air ambiant. Un régulateur PI ajuste $\dot Q_{rég}$ pour tenir 80 °C.
 

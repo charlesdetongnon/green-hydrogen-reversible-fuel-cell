@@ -93,7 +93,7 @@ Si plus de puissance entre dans le bus qu'il n'en sort, les condensateurs se cha
 
 **Q12. Pourquoi travailler dans le repère tournant dq ?**
 
-Parce que des grandeurs sinusoïdales à 60 Hz deviennent constantes dans un repère qui tourne à 60 Hz. Un régulateur PI annule alors l'erreur en régime établi, ce qu'il ne sait pas faire sur une consigne sinusoïdale. De plus, si l'axe d est aligné sur la tension, la puissance active vaut $1{,}5\,v_d\,i_d$ et la puissance réactive dépend de $i_q$ seul : les deux se règlent séparément.
+Parce que des grandeurs sinusoïdales à 60 Hz deviennent constantes dans un repère qui tourne à 60 Hz. Un régulateur PI annule alors l'erreur en régime établi, ce qu'il ne sait pas faire sur une consigne sinusoïdale. De plus, si l'axe d est aligné sur la tension, la puissance active vaut $1{,}5\ v_d\ i_d$ et la puissance réactive dépend de $i_q$ seul : les deux se règlent séparément.
 
 ---
 
@@ -103,15 +103,21 @@ Parce que des grandeurs sinusoïdales à 60 Hz deviennent constantes dans un rep
 
 L'équation de Butler-Volmer, avec deux électrons et des coefficients de transfert égaux à $\alpha$ dans les deux sens, s'écrit
 
-$$j = j_0\left[e^{\frac{2\alpha F\eta}{RT}} - e^{-\frac{2\alpha F\eta}{RT}}\right] = 2 j_0 \sinh\!\left(\frac{2\alpha F\eta}{RT}\right)$$
+```math
+j = j_0\left[e^{\frac{2\alpha F\eta}{RT}} - e^{-\frac{2\alpha F\eta}{RT}}\right] = 2 j_0 \sinh\!\left(\frac{2\alpha F\eta}{RT}\right)
+```
 
 On l'inverse :
 
-$$\eta = \frac{RT}{2\alpha F}\,\operatorname{asinh}\!\left(\frac{j}{2 j_0}\right)$$
+```math
+\eta = \frac{RT}{2\alpha F}\,\mathrm{asinh}\!\left(\frac{j}{2 j_0}\right)
+```
 
-Quand $j \gg j_0$ : $\operatorname{asinh}(x) = \ln(x + \sqrt{x^2+1}) \approx \ln(2x)$, donc
+Quand $j \gg j_0$ : $\mathrm{asinh}(x) = \ln(x + \sqrt{x^2+1}) \approx \ln(2x)$, donc
 
-$$\eta \approx \frac{RT}{2\alpha F}\ln\!\left(\frac{j}{j_0}\right)$$
+```math
+\eta \approx \frac{RT}{2\alpha F}\ln\!\left(\frac{j}{j_0}\right)
+```
 
 C'est la loi de Tafel. Avec $\alpha = 0{,}5$ à 80 °C, la pente vaut $0{,}0304 \times \ln 10 = 70$ mV par décade de courant.
 
@@ -119,7 +125,9 @@ C'est la loi de Tafel. Avec $\alpha = 0{,}5$ à 80 °C, la pente vaut $0{,}0304 
 
 Sans fuite, une électrolyse sous tension $V_{EC}$ produit l'hydrogène avec un rendement PCS de $V_{tn}/V_{EC}$, puisque chaque charge $2F$ fournit $2F V_{EC}$ joules pour stocker $\Delta H = 2F V_{tn}$. De même, la pile restitue $2F V_{FC}$ par mole d'hydrogène consommée, soit un rendement $V_{FC}/V_{tn}$. Le produit :
 
-$$\eta_{AR} = \frac{V_{tn}}{V_{EC}}\times\frac{V_{FC}}{V_{tn}} = \frac{V_{FC}}{V_{EC}}$$
+```math
+\eta_{AR} = \frac{V_{tn}}{V_{EC}}\times\frac{V_{FC}}{V_{tn}} = \frac{V_{FC}}{V_{EC}}
+```
 
 La tension thermoneutre disparaît. À 1 A/cm² dans les deux modes : $0{,}719/1{,}512 = 47{,}5\ \%$. C'est pourquoi le DOE définit le rendement aller-retour comme un rapport de tensions.
 
@@ -127,7 +135,9 @@ La tension thermoneutre disparaît. À 1 A/cm² dans les deux modes : $0{,}719/1
 
 Par cellule et en divisant par le courant :
 
-$$\frac{\dot Q}{I} = V - \frac{\Delta H}{2F} = V - V_{tn}$$
+```math
+\frac{\dot Q}{I} = V - \frac{\Delta H}{2F} = V - V_{tn}
+```
 
 - En électrolyse ($I > 0$) : chaleur dégagée si $V > V_{tn}$, absorbée sinon.
 - En mode pile ($I < 0$, $V < V_{tn}$) : le produit de deux négatifs est positif, la chaleur est toujours dégagée.
@@ -136,7 +146,9 @@ Une seule formule, le bon signe dans tous les cas.
 
 ### 4.4 L'effet de la pression
 
-$$\frac{\partial V_{rev}}{\partial \ln p_{H_2}} = \frac{RT}{2F}$$
+```math
+\frac{\partial V_{rev}}{\partial \ln p_{H_2}} = \frac{RT}{2F}
+```
 
 Multiplier la pression d'hydrogène par 10 ajoute $0{,}0152 \times 2{,}303 = 35$ mV à 80 °C. Produire l'hydrogène sous 350 bar plutôt qu'à 0,54 bar ajouterait $0{,}0152 \times \ln(350/0{,}539) \approx 0{,}10$ V par cellule, soit environ 6,5 % de tension en plus : c'est la « compression électrochimique ». Elle serait moins chère que le compresseur (8,6 % de l'énergie) si la fuite ne l'annulait pas.
 
@@ -144,25 +156,33 @@ Multiplier la pression d'hydrogène par 10 ajoute $0{,}0152 \times 2{,}303 = 35$
 
 Une annuité constante $A$ payée pendant $n$ ans, actualisée au taux $r$, vaut aujourd'hui
 
-$$P = \sum_{k=1}^{n}\frac{A}{(1+r)^k} = A\,\frac{1 - (1+r)^{-n}}{r}$$
+```math
+P = \sum_{k=1}^{n}\frac{A}{(1+r)^k} = A\,\frac{1 - (1+r)^{-n}}{r}
+```
 
 d'où
 
-$$A = P\,\frac{r(1+r)^n}{(1+r)^n - 1}$$
+```math
+A = P\,\frac{r(1+r)^n}{(1+r)^n - 1}
+```
 
 Pour 8 % sur 25 ans, le facteur vaut 0,0937 : un investissement de 100 000 $ coûte 9 370 $ par an.
 
 ### 4.6 Le réglage de la boucle de courant
 
-Le filtre est une inductance $L$ en série avec une résistance $R$ : sa fonction de transfert est $1/(Ls + R)$. Un régulateur PI s'écrit $k_p + k_i/s = k_p\,(s + k_i/k_p)/s$. En choisissant $k_i/k_p = R/L$, le zéro du régulateur compense le pôle du filtre, et il reste
+Le filtre est une inductance $L$ en série avec une résistance $R$ : sa fonction de transfert est $1/(Ls + R)$. Un régulateur PI s'écrit $k_p + k_i/s = k_p\ (s + k_i/k_p)/s$. En choisissant $k_i/k_p = R/L$, le zéro du régulateur compense le pôle du filtre, et il reste
 
-$$\frac{k_p}{L\,s}$$
+```math
+\frac{k_p}{L\,s}
+```
 
-un intégrateur pur. La boucle fermée a pour bande passante $k_p/L$. Avec $k_p = L\,\omega_c$, on obtient exactement $\omega_c$, ici $2\pi \times 300 = 1885$ rad/s.
+un intégrateur pur. La boucle fermée a pour bande passante $k_p/L$. Avec $k_p = L\ \omega_c$, on obtient exactement $\omega_c$, ici $2\pi \times 300 = 1885$ rad/s.
 
 ### 4.7 Le minimum théorique de l'électrolyse
 
-$$\frac{285\,800\ \text{J/mol}}{2{,}016\times10^{-3}\ \text{kg/mol}} = 141{,}8\ \text{MJ/kg} = 39{,}4\ \text{kWh/kg}$$
+```math
+\frac{285\,800\ \text{J/mol}}{2{,}016\times10^{-3}\ \text{kg/mol}} = 141{,}8\ \text{MJ/kg} = 39{,}4\ \text{kWh/kg}
+```
 
 Le système consomme 46 kWh/kg, soit un rendement de 86 % sur le PCS, compression et auxiliaires compris.
 
